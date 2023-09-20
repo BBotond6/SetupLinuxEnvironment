@@ -54,6 +54,39 @@ def CreateLinuxGroup(group):
 			print(e.stderr)
 			return False
 
+def AddSudoPrivilegesToUser(user):
+	if user in ReadShCommandOut("cut -d: -f1 /etc/passwd | sort") and user in ReadShCommandOut("ls /home/"):
+		CustumSudoersFile = "/etc/sudoers.d/custum_sudoers"
+		AddSudoRight = user + " ALL=(ALL) ALL"
+
+		#Check that /etc/sudoers.d/custum_sudoers file does not exist
+		if ReadShCommandOut("ls " + CustumSudoersFile):
+			print("Error: " + CustumSudoersFile + " file already exist!")
+			return False
+		else:
+			print(CustumSudoersFile + " does not exist, continue to create it:")
+
+		if RunShCommand("sudo sh -c \"echo '" + AddSudoRight + "' > " + CustumSudoersFile + "\""):
+			print("Add sudo privileges for " + user + " into " + CustumSudoersFile + " file was successfull")
+			if RunShCommand("sudo chmod 440 " + CustumSudoersFile):
+				print("Set " + CustumSudoersFile + " file permissions for the owner and the group was successfull")
+			else:
+				print("Error: Set " + CustumSudoersFile + " file permissions for the owner and the group was unsuccessfull!")
+				if RunShCommand("sudo rm -f " + CustumSudoersFile):
+					print("Remove " + CustumSudoersFile + " was successfull!")
+				else:
+					print("Error: Remove " + CustumSudoersFile + " was unsuccessfull!")
+				return False
+		else:
+			print("Error: Create " + CustumSudoersFile + " was unsuccessfull!")
+			return False
+		return True
+	else:
+		print("Error: Cannot give sudo privileges to " + user + " user!")
+		if user not in ReadShCommandOut("cut -d: -f1 /etc/passwd | sort"):
+			print(" note: " + user + " does not exist!")
+		return False
+
 def SetupOpenSshServer():
 	#Install openssh-server
 	if RunShCommand("sudo apt install -y openssh-server"):
@@ -99,6 +132,19 @@ def SetupRemoteDesktopAccess():
 								print("Add " + NewUserName + " to tsusers was successfull")
 								if RunShCommand("sudo service xrdp restart"):
 									print("Restart xrdp service was successfull")
+
+									AddSudoPrivileges = input("Do you want to give sudo privileges to " + NewUserName + " user? (y=yes, n=no): ")
+									while AddSudoPrivileges not in ("y", "n"):
+										AddSudoPrivileges = input("Wrong input! (y=yes, n=no): ")
+
+									if AddSudoPrivileges == "y":
+										if AddSudoPrivilegesToUser(NewUserName):
+											print("Add sudo privileges to " + NewUserName + " user was successfull!")
+										else:
+											print(YELLOW + "Step 6:" + END_COLOR + " Setup remote desktop access | " + RED + "FAILED" + END_COLOR)
+											print(" note: Add sudo privileges to " + NewUserName + " user was unsuccessfull!")
+											sys.exit()
+
 								else:
 									print(YELLOW + "Step 6:" + END_COLOR + " Setup remote desktop access | " + RED + "FAILED" + END_COLOR)
 									print(" note: Restart xrdp service was unsuccessfull!")
