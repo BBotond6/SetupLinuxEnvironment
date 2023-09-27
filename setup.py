@@ -100,12 +100,16 @@ def SetupOpenSshServer():
 	CommandResult = ReadShCommandOut("sudo systemctl status ssh")
 	if CommandResult and "Active: active (running)" in CommandResult:
 		print("SSH server is active (running)")
-		if RunShCommand("sudo ufw allow ssh"):
-			print("Allow SSH through UFW was successfull")
+		if RunShCommand("ufw --version"):
+			print("ufw is installed!")
+			if RunShCommand("sudo ufw allow ssh"):
+				print("Allow SSH through UFW was successfull")
+			else:
+				print(YELLOW + "Step 5:" + END_COLOR + " Setup openssh-server | " + RED + "FAILED" + END_COLOR)
+				print(" note: Allow SSH through UFW was unsuccessfull!")
+				sys.exit()
 		else:
-			print(YELLOW + "Step 5:" + END_COLOR + " Setup openssh-server | " + RED + "FAILED" + END_COLOR)
-			print(" note: Allow SSH through UFW was unsuccessfull!")
-			sys.exit()
+			print("ufw is not installed!")
 		
 		print(YELLOW + "Step 5:" + END_COLOR + " Setup openssh-server | " + GREEN + "DONE" + END_COLOR)
 	else:
@@ -118,64 +122,69 @@ def SetupRemoteDesktopAccess():
 		print("Install xrdp was successfull")
 		if RunShCommand("sudo systemctl enable --now xrdp"):
 			print("Enable and start xrdp service was successfull")
-			if RunShCommand("sudo ufw allow from any to any port 3389 proto tcp"):
-				print("Allow TCP traffic on port 3389 was successfull")
-				print(YELLOW + "\nCreate user for remote desktop access" + END_COLOR)
-				NewUserName = input("Enter the user name: ")
-				if RunInteractiveShCommand("sudo adduser " + NewUserName):
-					print("Create " + NewUserName + " user was successfull")
-					if CreateLinuxGroup("tsusers"):
-						print("Create tsusers group was successfull")
-						if CreateLinuxGroup("tsadmins"):
-							print("Create tsadmins group was successfull")
-							if RunShCommand("sudo usermod -a -G tsusers " + NewUserName):
-								print("Add " + NewUserName + " to tsusers was successfull")
-								if RunShCommand("sudo service xrdp restart"):
-									print("Restart xrdp service was successfull")
+			if RunShCommand("ufw --version"):
+				print("ufw is installed!")
+				if RunShCommand("sudo ufw allow from any to any port 3389 proto tcp"):
+					print("Allow TCP traffic on port 3389 was successfull")
+				else:
+					print(YELLOW + "Step 6:" + END_COLOR + " Setup remote desktop access | " + RED + "FAILED" + END_COLOR)
+					print(" note: Allow TCP traffic on port 3389 was unsuccessfull!")
+					sys.exit()
+			else:
+				print("ufw is not installed!")
 
-									AddSudoPrivileges = input("Do you want to give sudo privileges to " + NewUserName + " user? (y=yes, n=no): ")
-									while AddSudoPrivileges not in ("y", "n"):
-										AddSudoPrivileges = input("Wrong input! (y=yes, n=no): ")
+			print(YELLOW + "\nCreate user for remote desktop access" + END_COLOR)
+			NewUserName = input("Enter the user name: ")
+			if RunInteractiveShCommand("sudo adduser " + NewUserName):
+				print("Create " + NewUserName + " user was successfull")
+				if CreateLinuxGroup("tsusers"):
+					print("Create tsusers group was successfull")
+					if CreateLinuxGroup("tsadmins"):
+						print("Create tsadmins group was successfull")
+						if RunShCommand("sudo usermod -a -G tsusers " + NewUserName):
+							print("Add " + NewUserName + " to tsusers was successfull")
+							if RunShCommand("sudo service xrdp restart"):
+								print("Restart xrdp service was successfull")
 
-									if AddSudoPrivileges == "y":
-										if AddSudoPrivilegesToUser(NewUserName):
-											print("Add sudo privileges to " + NewUserName + " user was successfull!")
-										else:
-											print(YELLOW + "Step 6:" + END_COLOR + " Setup remote desktop access | " + RED + "FAILED" + END_COLOR)
-											print(" note: Add sudo privileges to " + NewUserName + " user was unsuccessfull!")
-											sys.exit()
+								AddSudoPrivileges = input("Do you want to give sudo privileges to " + NewUserName + " user? (y=yes, n=no): ")
+								while AddSudoPrivileges not in ("y", "n"):
+									AddSudoPrivileges = input("Wrong input! (y=yes, n=no): ")
 
-								else:
-									print(YELLOW + "Step 6:" + END_COLOR + " Setup remote desktop access | " + RED + "FAILED" + END_COLOR)
-									print(" note: Restart xrdp service was unsuccessfull!")
-									sys.exit()
+								if AddSudoPrivileges == "y":
+									if AddSudoPrivilegesToUser(NewUserName):
+										print("Add sudo privileges to " + NewUserName + " user was successfull!")
+									else:
+										print(YELLOW + "Step 6:" + END_COLOR + " Setup remote desktop access | " + RED + "FAILED" + END_COLOR)
+										print(" note: Add sudo privileges to " + NewUserName + " user was unsuccessfull!")
+										sys.exit()
+
 							else:
 								print(YELLOW + "Step 6:" + END_COLOR + " Setup remote desktop access | " + RED + "FAILED" + END_COLOR)
-								print(" note: Add " + NewUserName + " to tsusers was unsuccessfull!")
+								print(" note: Restart xrdp service was unsuccessfull!")
 								sys.exit()
-					
 						else:
 							print(YELLOW + "Step 6:" + END_COLOR + " Setup remote desktop access | " + RED + "FAILED" + END_COLOR)
-							print(" note: Create tsadmins group was unsuccessfull!")
+							print(" note: Add " + NewUserName + " to tsusers was unsuccessfull!")
 							sys.exit()
+
 					else:
 						print(YELLOW + "Step 6:" + END_COLOR + " Setup remote desktop access | " + RED + "FAILED" + END_COLOR)
-						print(" note: Create tsusers group was unsuccessfull!")
+						print(" note: Create tsadmins group was unsuccessfull!")
 						sys.exit()
 				else:
 					print(YELLOW + "Step 6:" + END_COLOR + " Setup remote desktop access | " + RED + "FAILED" + END_COLOR)
-					print(" note: Create " + NewUserName + " user was unsuccessfull!")
+					print(" note: Create tsusers group was unsuccessfull!")
 					sys.exit()
 			else:
 				print(YELLOW + "Step 6:" + END_COLOR + " Setup remote desktop access | " + RED + "FAILED" + END_COLOR)
-				print(" note: Allow TCP traffic on port 3389 was unsuccessfull!")
+				print(" note: Create " + NewUserName + " user was unsuccessfull!")
 				sys.exit()
+
 		else:
 			print(YELLOW + "Step 6:" + END_COLOR + " Setup remote desktop access | " + RED + "FAILED" + END_COLOR)
 			print(" note: Enable and start xrdp service was unsuccessfull!")
 			sys.exit()
-			
-		
+
 		print(YELLOW + "Step 6:" + END_COLOR + " Setup remote desktop access | " + GREEN + "DONE" + END_COLOR)
 	else:
 		print(YELLOW + "Step 6:" + END_COLOR + " Setup remote desktop access | " + RED + "FAILED" + END_COLOR)
