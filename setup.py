@@ -191,9 +191,19 @@ def SetupRemoteDesktopAccess():
 		print(" note: Install xrdp was unsuccessfull!")
 		sys.exit()
 
+def SetupSQLite():
+	if RunShCommand("sudo apt install sqlite3"):
+		print("Install SQLite was successfull")
+		print(YELLOW + "Step 7:" + END_COLOR + " Setup SQLite database | " + GREEN + "DONE" + END_COLOR)
+	else:
+		print(YELLOW + "Step 7:" + END_COLOR + " Setup SQLite database | " + RED + "FAILED" + END_COLOR)
+		print(" note: Install SQLite was unsuccessfull!")
+		sys.exit()
+
 def main():
 	SetupOpenSshServer()
 	SetupRemoteDesktopAccess()
-	
+	SetupSQLite()
+
 if __name__ == "__main__":
 	main()
