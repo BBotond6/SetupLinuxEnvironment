@@ -200,10 +200,39 @@ def SetupSQLite():
 		print(" note: Install SQLite was unsuccessfull!")
 		sys.exit()
 
+def SetupCppEnvironment():
+	if RunShCommand("sudo apt install build-essential"):
+		print("Install build-essential was successfull")
+
+		print(YELLOW + "Step 8:" + END_COLOR + " Install build-essential | " + GREEN + "DONE" + END_COLOR)
+	else:
+		print(YELLOW + "Step 8:" + END_COLOR + " Install build-essential | " + RED + "FAILED" + END_COLOR)
+		print(" note: Install build-essential was unsuccessfull!")
+		sys.exit()
+
+	if RunShCommand("sudo apt install libpoppler-glib-dev"):
+		print("Install Poppler was successfull")
+
+		print(YELLOW + "Step 9:" + END_COLOR + " Install Poppler | " + GREEN + "DONE" + END_COLOR)
+	else:
+		print(YELLOW + "Step 9:" + END_COLOR + " Install Poppler | " + RED + "FAILED" + END_COLOR)
+		print(" note: Install Poppler was unsuccessfull!")
+		sys.exit()
+
+	if RunShCommand("sudo apt-get install libglib2.0-dev"):
+		print("Install GLib was successfull")
+
+		print(YELLOW + "Step 10:" + END_COLOR + " Install GLib | " + GREEN + "DONE" + END_COLOR)
+	else:
+		print(YELLOW + "Step 10:" + END_COLOR + " Install GLib | " + RED + "FAILED" + END_COLOR)
+		print(" note: Install GLib was unsuccessfull!")
+		sys.exit()
+
 def main():
 	SetupOpenSshServer()
 	SetupRemoteDesktopAccess()
 	SetupSQLite()
+	SetupCppEnvironment()
 
 if __name__ == "__main__":
 	main()
