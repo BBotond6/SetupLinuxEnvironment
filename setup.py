@@ -9,6 +9,16 @@ GREEN = "\033[32m"
 YELLOW = "\033[33m"
 END_COLOR = "\033[0m"
 
+def DONE_event(step, message, note=None):
+	if note != None:
+		print(note)
+	print(YELLOW + "Step " + str(step) + ": " + END_COLOR + message + " | " + GREEN + "DONE" + END_COLOR)
+
+def FAILED_event(step, message, note):
+	print(YELLOW + "Step " + str(step) + ": " + END_COLOR + message + " | " + RED + "FAILED" + END_COLOR)
+	print(" note: " + note)
+	sys.exit()
+
 def RunShCommand(command):
 	try:
 		print("<" + command + "> Command result:")
@@ -90,11 +100,9 @@ def AddSudoPrivilegesToUser(user):
 def SetupOpenSshServer():
 	#Install openssh-server
 	if RunShCommand("sudo apt install -y openssh-server"):
-		print(YELLOW + "Step 4:" + END_COLOR + " Install openssh-server | " + GREEN + "DONE" + END_COLOR)
+		DONE_event(4, "Install openssh-server")
 	else:
-		print(YELLOW + "Step 4:" + END_COLOR + " Install openssh-server | " + RED + "FAILED" + END_COLOR)
-		print(" note: Installation of openssh-server was unsuccessfull!")
-		sys.exit()	
+		FAILED_event(4, "Install openssh-server", "Installation of openssh-server was unsuccessfull!")
 	
 	#Setup openssh-server
 	CommandResult = ReadShCommandOut("sudo systemctl status ssh")
@@ -105,17 +113,13 @@ def SetupOpenSshServer():
 			if RunShCommand("sudo ufw allow ssh"):
 				print("Allow SSH through UFW was successfull")
 			else:
-				print(YELLOW + "Step 5:" + END_COLOR + " Setup openssh-server | " + RED + "FAILED" + END_COLOR)
-				print(" note: Allow SSH through UFW was unsuccessfull!")
-				sys.exit()
+				FAILED_event(5, "Setup openssh-server", "Allow SSH through UFW was unsuccessfull!")
 		else:
 			print("ufw is not installed!")
 		
-		print(YELLOW + "Step 5:" + END_COLOR + " Setup openssh-server | " + GREEN + "DONE" + END_COLOR)
+		DONE_event(5, "Setup openssh-server")
 	else:
-		print(YELLOW + "Step 5:" + END_COLOR + " Setup openssh-server | " + RED + "FAILED" + END_COLOR)
-		print(" note: SSH server is not running!")
-		sys.exit()
+		FAILED_event(5, "Setup openssh-server", "SSH server is not running!")
 
 def SetupRemoteDesktopAccess():
 	if RunShCommand("sudo apt install xrdp"):
@@ -127,9 +131,7 @@ def SetupRemoteDesktopAccess():
 				if RunShCommand("sudo ufw allow from any to any port 3389 proto tcp"):
 					print("Allow TCP traffic on port 3389 was successfull")
 				else:
-					print(YELLOW + "Step 6:" + END_COLOR + " Setup remote desktop access | " + RED + "FAILED" + END_COLOR)
-					print(" note: Allow TCP traffic on port 3389 was unsuccessfull!")
-					sys.exit()
+					FAILED_event(6, "Setup remote desktop access", "Allow TCP traffic on port 3389 was unsuccessfull!")
 			else:
 				print("ufw is not installed!")
 
@@ -154,79 +156,48 @@ def SetupRemoteDesktopAccess():
 									if AddSudoPrivilegesToUser(NewUserName):
 										print("Add sudo privileges to " + NewUserName + " user was successfull!")
 									else:
-										print(YELLOW + "Step 6:" + END_COLOR + " Setup remote desktop access | " + RED + "FAILED" + END_COLOR)
-										print(" note: Add sudo privileges to " + NewUserName + " user was unsuccessfull!")
-										sys.exit()
+										FAILED_event(6, "Setup remote desktop access", "Add sudo privileges to " + NewUserName + " user was unsuccessfull!")
 
 							else:
-								print(YELLOW + "Step 6:" + END_COLOR + " Setup remote desktop access | " + RED + "FAILED" + END_COLOR)
-								print(" note: Restart xrdp service was unsuccessfull!")
-								sys.exit()
+								FAILED_event(6, "Setup remote desktop access", "Restart xrdp service was unsuccessfull!")
 						else:
-							print(YELLOW + "Step 6:" + END_COLOR + " Setup remote desktop access | " + RED + "FAILED" + END_COLOR)
-							print(" note: Add " + NewUserName + " to tsusers was unsuccessfull!")
-							sys.exit()
+							FAILED_event(6, "Setup remote desktop access", "Add " + NewUserName + " to tsusers was unsuccessfull!")
 
 					else:
-						print(YELLOW + "Step 6:" + END_COLOR + " Setup remote desktop access | " + RED + "FAILED" + END_COLOR)
-						print(" note: Create tsadmins group was unsuccessfull!")
-						sys.exit()
+						FAILED_event(6, "Setup remote desktop access", "Create tsadmins group was unsuccessfull!")
 				else:
-					print(YELLOW + "Step 6:" + END_COLOR + " Setup remote desktop access | " + RED + "FAILED" + END_COLOR)
-					print(" note: Create tsusers group was unsuccessfull!")
-					sys.exit()
+					FAILED_event(6, "Setup remote desktop access", "Create tsusers group was unsuccessfull!")
 			else:
-				print(YELLOW + "Step 6:" + END_COLOR + " Setup remote desktop access | " + RED + "FAILED" + END_COLOR)
-				print(" note: Create " + NewUserName + " user was unsuccessfull!")
-				sys.exit()
+				FAILED_event(6, "Setup remote desktop access", "Create " + NewUserName + " user was unsuccessfull!")
 
 		else:
-			print(YELLOW + "Step 6:" + END_COLOR + " Setup remote desktop access | " + RED + "FAILED" + END_COLOR)
-			print(" note: Enable and start xrdp service was unsuccessfull!")
-			sys.exit()
+			FAILED_event(6, "Setup remote desktop access", "Enable and start xrdp service was unsuccessfull!")
 
-		print(YELLOW + "Step 6:" + END_COLOR + " Setup remote desktop access | " + GREEN + "DONE" + END_COLOR)
+		DONE_event(6, "Setup remote desktop access")
 	else:
-		print(YELLOW + "Step 6:" + END_COLOR + " Setup remote desktop access | " + RED + "FAILED" + END_COLOR)
-		print(" note: Install xrdp was unsuccessfull!")
-		sys.exit()
+		FAILED_event(6, "Setup remote desktop access", "Install xrdp was unsuccessfull!")
 
 def SetupSQLite():
 	if RunShCommand("sudo apt install sqlite3"):
-		print("Install SQLite was successfull")
-		print(YELLOW + "Step 7:" + END_COLOR + " Setup SQLite database | " + GREEN + "DONE" + END_COLOR)
+		DONE_event(7, "Setup SQLite database", "Install SQLite was successfull")
 	else:
-		print(YELLOW + "Step 7:" + END_COLOR + " Setup SQLite database | " + RED + "FAILED" + END_COLOR)
-		print(" note: Install SQLite was unsuccessfull!")
-		sys.exit()
+		FAILED_event(7, "Setup SQLite database", "Install SQLite was unsuccessfull!")
 
 def SetupCppEnvironment():
 	if RunShCommand("sudo apt install build-essential"):
-		print("Install build-essential was successfull")
-
-		print(YELLOW + "Step 8:" + END_COLOR + " Install build-essential | " + GREEN + "DONE" + END_COLOR)
+		DONE_event(8, "Install build-essential", "Install build-essential was successfull")
 	else:
-		print(YELLOW + "Step 8:" + END_COLOR + " Install build-essential | " + RED + "FAILED" + END_COLOR)
-		print(" note: Install build-essential was unsuccessfull!")
-		sys.exit()
+		FAILED_event(8, "Install build-essential", "Install build-essential was unsuccessfull!")
 
 	if RunShCommand("sudo apt install libpoppler-glib-dev"):
-		print("Install Poppler was successfull")
-
-		print(YELLOW + "Step 9:" + END_COLOR + " Install Poppler | " + GREEN + "DONE" + END_COLOR)
+		DONE_event(9, "Install Poppler", "Install Poppler was successfull")
 	else:
-		print(YELLOW + "Step 9:" + END_COLOR + " Install Poppler | " + RED + "FAILED" + END_COLOR)
-		print(" note: Install Poppler was unsuccessfull!")
-		sys.exit()
+		FAILED_event(9, "Install Poppler", "Install Poppler was unsuccessfull!")
 
 	if RunShCommand("sudo apt-get install libglib2.0-dev"):
-		print("Install GLib was successfull")
-
-		print(YELLOW + "Step 10:" + END_COLOR + " Install GLib | " + GREEN + "DONE" + END_COLOR)
+		DONE_event(10, "Install GLib", "Install GLib was successfull")
 	else:
-		print(YELLOW + "Step 10:" + END_COLOR + " Install GLib | " + RED + "FAILED" + END_COLOR)
-		print(" note: Install GLib was unsuccessfull!")
-		sys.exit()
+		FAILED_event(10, "Install GLib", "Install GLib was unsuccessfull!")
 
 def main():
 	SetupOpenSshServer()
