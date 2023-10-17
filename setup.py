@@ -75,27 +75,28 @@ def AddSudoPrivilegesToUser(user):
 			return False
 		else:
 			print(CustumSudoersFile + " does not exist, continue to create it:")
-
-		if RunShCommand("sudo sh -c \"echo '" + AddSudoRight + "' > " + CustumSudoersFile + "\""):
-			print("Add sudo privileges for " + user + " into " + CustumSudoersFile + " file was successfull")
-			if RunShCommand("sudo chmod 440 " + CustumSudoersFile):
-				print("Set " + CustumSudoersFile + " file permissions for the owner and the group was successfull")
-			else:
-				print("Error: Set " + CustumSudoersFile + " file permissions for the owner and the group was unsuccessfull!")
-				if RunShCommand("sudo rm -f " + CustumSudoersFile):
-					print("Remove " + CustumSudoersFile + " was successfull!")
-				else:
-					print("Error: Remove " + CustumSudoersFile + " was unsuccessfull!")
-				return False
-		else:
-			print("Error: Create " + CustumSudoersFile + " was unsuccessfull!")
-			return False
-		return True
 	else:
 		print("Error: Cannot give sudo privileges to " + user + " user!")
 		if user not in ReadShCommandOut("cut -d: -f1 /etc/passwd | sort"):
 			print(" note: " + user + " does not exist!")
 		return False
+
+	if RunShCommand("sudo sh -c \"echo '" + AddSudoRight + "' > " + CustumSudoersFile + "\""):
+		print("Add sudo privileges for " + user + " into " + CustumSudoersFile + " file was successfull")
+	else:
+		print("Error: Create " + CustumSudoersFile + " was unsuccessfull!")
+		return False
+
+	if RunShCommand("sudo chmod 440 " + CustumSudoersFile):
+		print("Set " + CustumSudoersFile + " file permissions for the owner and the group was successfull")
+	else:
+		print("Error: Set " + CustumSudoersFile + " file permissions for the owner and the group was unsuccessfull!")
+		if RunShCommand("sudo rm -f " + CustumSudoersFile):
+			print("Remove " + CustumSudoersFile + " was successfull!")
+		else:
+			print("Error: Remove " + CustumSudoersFile + " was unsuccessfull!")
+		return False
+	return True
 
 def SetupOpenSshServer():
 	#Install openssh-server
@@ -108,74 +109,76 @@ def SetupOpenSshServer():
 	CommandResult = ReadShCommandOut("sudo systemctl status ssh")
 	if CommandResult and "Active: active (running)" in CommandResult:
 		print("SSH server is active (running)")
-		if RunShCommand("ufw --version"):
-			print("ufw is installed!")
-			if RunShCommand("sudo ufw allow ssh"):
-				print("Allow SSH through UFW was successfull")
-			else:
-				FAILED_event(5, "Setup openssh-server", "Allow SSH through UFW was unsuccessfull!")
-		else:
-			print("ufw is not installed!")
-		
-		DONE_event(5, "Setup openssh-server")
 	else:
 		FAILED_event(5, "Setup openssh-server", "SSH server is not running!")
+
+	if RunShCommand("ufw --version"):
+		print("ufw is installed!")
+		if RunShCommand("sudo ufw allow ssh"):
+			print("Allow SSH through UFW was successfull")
+		else:
+			FAILED_event(5, "Setup openssh-server", "Allow SSH through UFW was unsuccessfull!")
+	else:
+		print("ufw is not installed!")
+	DONE_event(5, "Setup openssh-server")
 
 def SetupRemoteDesktopAccess():
 	if RunShCommand("sudo apt install xrdp"):
 		print("Install xrdp was successfull")
-		if RunShCommand("sudo systemctl enable --now xrdp"):
-			print("Enable and start xrdp service was successfull")
-			if RunShCommand("ufw --version"):
-				print("ufw is installed!")
-				if RunShCommand("sudo ufw allow from any to any port 3389 proto tcp"):
-					print("Allow TCP traffic on port 3389 was successfull")
-				else:
-					FAILED_event(6, "Setup remote desktop access", "Allow TCP traffic on port 3389 was unsuccessfull!")
-			else:
-				print("ufw is not installed!")
-
-			print(YELLOW + "\nCreate user for remote desktop access" + END_COLOR)
-			NewUserName = input("Enter the user name: ")
-			if RunInteractiveShCommand("sudo adduser " + NewUserName):
-				print("Create " + NewUserName + " user was successfull")
-				if CreateLinuxGroup("tsusers"):
-					print("Create tsusers group was successfull")
-					if CreateLinuxGroup("tsadmins"):
-						print("Create tsadmins group was successfull")
-						if RunShCommand("sudo usermod -a -G tsusers " + NewUserName):
-							print("Add " + NewUserName + " to tsusers was successfull")
-							if RunShCommand("sudo service xrdp restart"):
-								print("Restart xrdp service was successfull")
-
-								AddSudoPrivileges = input("Do you want to give sudo privileges to " + NewUserName + " user? (y=yes, n=no): ")
-								while AddSudoPrivileges not in ("y", "n"):
-									AddSudoPrivileges = input("Wrong input! (y=yes, n=no): ")
-
-								if AddSudoPrivileges == "y":
-									if AddSudoPrivilegesToUser(NewUserName):
-										print("Add sudo privileges to " + NewUserName + " user was successfull!")
-									else:
-										FAILED_event(6, "Setup remote desktop access", "Add sudo privileges to " + NewUserName + " user was unsuccessfull!")
-
-							else:
-								FAILED_event(6, "Setup remote desktop access", "Restart xrdp service was unsuccessfull!")
-						else:
-							FAILED_event(6, "Setup remote desktop access", "Add " + NewUserName + " to tsusers was unsuccessfull!")
-
-					else:
-						FAILED_event(6, "Setup remote desktop access", "Create tsadmins group was unsuccessfull!")
-				else:
-					FAILED_event(6, "Setup remote desktop access", "Create tsusers group was unsuccessfull!")
-			else:
-				FAILED_event(6, "Setup remote desktop access", "Create " + NewUserName + " user was unsuccessfull!")
-
-		else:
-			FAILED_event(6, "Setup remote desktop access", "Enable and start xrdp service was unsuccessfull!")
-
-		DONE_event(6, "Setup remote desktop access")
 	else:
 		FAILED_event(6, "Setup remote desktop access", "Install xrdp was unsuccessfull!")
+
+	if RunShCommand("sudo systemctl enable --now xrdp"):
+		print("Enable and start xrdp service was successfull")
+	else:
+		FAILED_event(6, "Setup remote desktop access", "Enable and start xrdp service was unsuccessfull!")
+
+	if RunShCommand("ufw --version"):
+		print("ufw is installed!")
+		if RunShCommand("sudo ufw allow from any to any port 3389 proto tcp"):
+			print("Allow TCP traffic on port 3389 was successfull")
+		else:
+			FAILED_event(6, "Setup remote desktop access", "Allow TCP traffic on port 3389 was unsuccessfull!")
+	else:
+		print("ufw is not installed!")
+
+	print(YELLOW + "\nCreate user for remote desktop access" + END_COLOR)
+	NewUserName = input("Enter the user name: ")
+
+	if RunInteractiveShCommand("sudo adduser " + NewUserName):
+		print("Create " + NewUserName + " user was successfull")
+	else:
+		FAILED_event(6, "Setup remote desktop access", "Create " + NewUserName + " user was unsuccessfull!")
+
+	if CreateLinuxGroup("tsusers"):
+		print("Create tsusers group was successfull")
+	else:
+		FAILED_event(6, "Setup remote desktop access", "Create tsusers group was unsuccessfull!")
+
+	if CreateLinuxGroup("tsadmins"):
+		print("Create tsadmins group was successfull")
+	else:
+		FAILED_event(6, "Setup remote desktop access", "Create tsadmins group was unsuccessfull!")
+
+	if RunShCommand("sudo usermod -a -G tsusers " + NewUserName):
+		print("Add " + NewUserName + " to tsusers was successfull")
+	else:
+		FAILED_event(6, "Setup remote desktop access", "Add " + NewUserName + " to tsusers was unsuccessfull!")
+
+	if RunShCommand("sudo service xrdp restart"):
+		print("Restart xrdp service was successfull")
+	else:
+		FAILED_event(6, "Setup remote desktop access", "Restart xrdp service was unsuccessfull!")
+
+	AddSudoPrivileges = input("Do you want to give sudo privileges to " + NewUserName + " user? (y=yes, n=no): ")
+	while AddSudoPrivileges not in ("y", "n"):
+		AddSudoPrivileges = input("Wrong input! (y=yes, n=no): ")
+	if AddSudoPrivileges == "y":
+		if AddSudoPrivilegesToUser(NewUserName):
+			print("Add sudo privileges to " + NewUserName + " user was successfull!")
+		else:
+			FAILED_event(6, "Setup remote desktop access", "Add sudo privileges to " + NewUserName + " user was unsuccessfull!")
+	DONE_event(6, "Setup remote desktop access")
 
 def SetupSQLite():
 	if RunShCommand("sudo apt install sqlite3"):
