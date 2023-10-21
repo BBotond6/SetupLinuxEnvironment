@@ -98,47 +98,51 @@ def AddSudoPrivilegesToUser(user):
 		return False
 	return True
 
-def SetupOpenSshServer():
+def SetupOpenSshServer(step):
+	StepName = "Setup openssh-server"
+
 	#Install openssh-server
 	if RunShCommand("sudo apt install -y openssh-server"):
-		DONE_event(5, "Install openssh-server")
+		print("Install openssh-server was successfull")
 	else:
-		FAILED_event(5, "Install openssh-server", "Installation of openssh-server was unsuccessfull!")
+		FAILED_event(step, StepName, "Installation of openssh-server was unsuccessfull!")
 	
 	#Setup openssh-server
 	CommandResult = ReadShCommandOut("sudo systemctl status ssh")
 	if CommandResult and "Active: active (running)" in CommandResult:
 		print("SSH server is active (running)")
 	else:
-		FAILED_event(6, "Setup openssh-server", "SSH server is not running!")
+		FAILED_event(step, StepName, "SSH server is not running!")
 
 	if RunShCommand("ufw --version"):
 		print("ufw is installed!")
 		if RunShCommand("sudo ufw allow ssh"):
 			print("Allow SSH through UFW was successfull")
 		else:
-			FAILED_event(6, "Setup openssh-server", "Allow SSH through UFW was unsuccessfull!")
+			FAILED_event(step, StepName, "Allow SSH through UFW was unsuccessfull!")
 	else:
 		print("ufw is not installed!")
-	DONE_event(6, "Setup openssh-server")
+	DONE_event(step, StepName)
 
-def SetupRemoteDesktopAccess():
+def SetupRemoteDesktopAccess(step):
+	StepName = "Setup remote desktop access"
+
 	if RunShCommand("sudo apt install xrdp"):
 		print("Install xrdp was successfull")
 	else:
-		FAILED_event(7, "Setup remote desktop access", "Install xrdp was unsuccessfull!")
+		FAILED_event(step, StepName, "Install xrdp was unsuccessfull!")
 
 	if RunShCommand("sudo systemctl enable --now xrdp"):
 		print("Enable and start xrdp service was successfull")
 	else:
-		FAILED_event(7, "Setup remote desktop access", "Enable and start xrdp service was unsuccessfull!")
+		FAILED_event(step, StepName, "Enable and start xrdp service was unsuccessfull!")
 
 	if RunShCommand("ufw --version"):
 		print("ufw is installed!")
 		if RunShCommand("sudo ufw allow from any to any port 3389 proto tcp"):
 			print("Allow TCP traffic on port 3389 was successfull")
 		else:
-			FAILED_event(7, "Setup remote desktop access", "Allow TCP traffic on port 3389 was unsuccessfull!")
+			FAILED_event(step, StepName, "Allow TCP traffic on port 3389 was unsuccessfull!")
 	else:
 		print("ufw is not installed!")
 
@@ -148,27 +152,27 @@ def SetupRemoteDesktopAccess():
 	if RunInteractiveShCommand("sudo adduser " + NewUserName):
 		print("Create " + NewUserName + " user was successfull")
 	else:
-		FAILED_event(7, "Setup remote desktop access", "Create " + NewUserName + " user was unsuccessfull!")
+		FAILED_event(step, StepName, "Create " + NewUserName + " user was unsuccessfull!")
 
 	if CreateLinuxGroup("tsusers"):
 		print("Create tsusers group was successfull")
 	else:
-		FAILED_event(7, "Setup remote desktop access", "Create tsusers group was unsuccessfull!")
+		FAILED_event(step, StepName, "Create tsusers group was unsuccessfull!")
 
 	if CreateLinuxGroup("tsadmins"):
 		print("Create tsadmins group was successfull")
 	else:
-		FAILED_event(7, "Setup remote desktop access", "Create tsadmins group was unsuccessfull!")
+		FAILED_event(step, StepName, "Create tsadmins group was unsuccessfull!")
 
 	if RunShCommand("sudo usermod -a -G tsusers " + NewUserName):
 		print("Add " + NewUserName + " to tsusers was successfull")
 	else:
-		FAILED_event(7, "Setup remote desktop access", "Add " + NewUserName + " to tsusers was unsuccessfull!")
+		FAILED_event(step, StepName, "Add " + NewUserName + " to tsusers was unsuccessfull!")
 
 	if RunShCommand("sudo service xrdp restart"):
 		print("Restart xrdp service was successfull")
 	else:
-		FAILED_event(7, "Setup remote desktop access", "Restart xrdp service was unsuccessfull!")
+		FAILED_event(step, StepName, "Restart xrdp service was unsuccessfull!")
 
 	AddSudoPrivileges = input("Do you want to give sudo privileges to " + NewUserName + " user? (y=yes, n=no): ")
 	while AddSudoPrivileges not in ("y", "n"):
@@ -177,43 +181,65 @@ def SetupRemoteDesktopAccess():
 		if AddSudoPrivilegesToUser(NewUserName):
 			print("Add sudo privileges to " + NewUserName + " user was successfull!")
 		else:
-			FAILED_event(7, "Setup remote desktop access", "Add sudo privileges to " + NewUserName + " user was unsuccessfull!")
-	DONE_event(7, "Setup remote desktop access")
+			FAILED_event(step, StepName, "Add sudo privileges to " + NewUserName + " user was unsuccessfull!")
+	DONE_event(step, StepName)
 
-def SetupSQLite():
+def SetupSQLite(step):
+	StepName = "Setup SQLite database"
+
 	if RunShCommand("sudo apt install sqlite3"):
-		DONE_event(8, "Setup SQLite database", "Install SQLite was successfull")
+		DONE_event(step, StepName, "Install SQLite was successfull")
 	else:
-		FAILED_event(8, "Setup SQLite database", "Install SQLite was unsuccessfull!")
+		FAILED_event(step, StepName, "Install SQLite was unsuccessfull!")
 
-def SetupCppEnvironment():
+def SetupCppEnvironment(step):
+	StepName = "Setup C++ environment"
+
 	if RunShCommand("sudo apt install build-essential"):
-		DONE_event(9, "Install build-essential", "Install build-essential was successfull")
+		print("Install build-essential was successfull")
 	else:
-		FAILED_event(9, "Install build-essential", "Install build-essential was unsuccessfull!")
+		FAILED_event(step, StepName, "Install build-essential was unsuccessfull!")
 
 	if RunShCommand("sudo apt install libpoppler-glib-dev"):
-		DONE_event(10, "Install Poppler", "Install Poppler was successfull")
+		print("Install Poppler was successfull")
 	else:
-		FAILED_event(10, "Install Poppler", "Install Poppler was unsuccessfull!")
+		FAILED_event(step, StepName, "Install Poppler was unsuccessfull!")
 
 	if RunShCommand("sudo apt install libglib2.0-dev"):
-		DONE_event(11, "Install GLib", "Install GLib was successfull")
+		print("Install GLib was unsuccessfull!")
 	else:
-		FAILED_event(11, "Install GLib", "Install GLib was unsuccessfull!")
+		FAILED_event(step, StepName, "Install GLib was unsuccessfull!")
+	DONE_event(step, StepName)
 
-def InstallBashCompletion():
+def InstallBashCompletion(step):
+	StepName = "Install bash completion"
+
 	if RunShCommand("sudo apt install bash-completion"):
-		DONE_event(12, "Install bash completion", "Install bash completion was successfull")
+		DONE_event(step, StepName, "Install bash completion was successfull")
 	else:
-		FAILED_event(12, "Install bash completion", "Install bash completion was unsuccessfull!")
+		FAILED_event(step, StepName, "Install bash completion was unsuccessfull!")
+
+def SetupMariaDB(step):
+	StepName = "Setup MariaDB server"
+
+	if RunShCommand("sudo apt install mariadb-server"):
+		print("Install MariaDB server was successfull")
+	else:
+		FAILED_event(step, StepName, "Install MariaDB server was unsuccessfull!")
+
+	if RunShCommand("sudo mysql_secure_installation"):
+		print("Setup root access was successfull")
+	else:
+		FAILED_event(step, StepName, "Setup root access was unsuccessfull!")
+	DONE_event(step, StepName)
 
 def main():
-	SetupOpenSshServer()
-	SetupRemoteDesktopAccess()
-	SetupSQLite()
-	SetupCppEnvironment()
-	InstallBashCompletion()
+	SetupOpenSshServer(5)
+	SetupRemoteDesktopAccess(6)
+	SetupSQLite(7)
+	SetupCppEnvironment(8)
+	InstallBashCompletion(9)
+	SetupMariaDB(10)
 
 if __name__ == "__main__":
 	main()
