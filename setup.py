@@ -3,6 +3,8 @@
 import subprocess
 import sys
 import os
+import pexpect
+import getpass
 
 RED = "\033[31m"
 GREEN = "\033[32m"
@@ -48,6 +50,43 @@ def ReadShCommandOut(command):
 		print("Error output:")
 		print(e.stderr)
 		return False
+
+def RunShExpectCommand(command, exit_str, *args):
+	if len(args) == 0:
+		print("Error: The function need at least 2 more argument! (command, expect, send, ..., ...)")
+		return False
+	if len(args) % 2 != 0:
+		print("Error: Arguments must be paired after the command! (command, expect, send, ..., ...)")
+		return False
+
+	ExpectScript = f"""
+set timeout 30
+
+# Enable output to terminal
+log_user 1
+
+spawn {command}
+	"""
+
+	for i in range(0, len(args), 2):
+		ExpectScript += f"""
+expect -exact "{args[i]}"
+send -- "{args[i + 1]}\\r"
+		"""
+
+	ExpectScript += f"""
+expect -exact "{exit_str}" {
+	"exit"
+}
+expect eof
+	"""
+
+	# Run the ExpectScript
+	ExpectProcess = pexpect.spawn('/usr/bin/expect', encoding='utf-8')
+	ExpectProcess.send(ExpectScript)
+	ExpectProcess.expect(pexpect.EOF)
+	ExpectProcess.close()
+	return True
 
 def CreateLinuxGroup(group):
 	try:
@@ -227,7 +266,33 @@ def SetupMariaDB(step):
 	else:
 		FAILED_event(step, StepName, "Install MariaDB server was unsuccessfull!")
 
-	if RunShCommand("sudo mysql_secure_installation"):
+	print(YELLOW + "\nSet new password for the root user" + END_COLOR)
+	RootUserPassword = getpass.getpass("New password: ")
+	PasswordCounter = 0
+	while 1:
+		ReRootUserPassword = getpass.getpass("Re-enter new password :")
+		PasswordCounter += 1
+		if PasswordCounter >= 6:
+			FAILED_event(step, StepName, "Setup new password for the root user was unsuccessfull!")
+		if RootUserPassword == ReRootUserPassword:
+			break
+		print("The two passwords do not match. Try again!")
+		RootUserPassword = getpass.getpass("(" + str(PasswordCounter + 1) + ". try) New password: ")
+
+	print(YELLOW + "\nEnter user password" + END_COLOR)
+	UserPassword = getpass.getpass("[sudo] password for " + getpass.getuser() + ":")
+
+	if RunShExpectCommand("sudo mysql_secure_installation", "Thanks for using MariaDB!",
+							"[sudo] password for " + getpass.getuser() + ":", UserPassword,
+							"Enter current password for root (enter for none):", "",
+							"Switch to unix_socket authentication [Y/n]", "y",
+							"Change the root password? [Y/n]", "y",
+							"New password:", RootUserPassword,
+							"Re-enter new password:", RootUserPassword,
+							"Remove anonymous users?", "y",
+							"Disallow root login remotely?", "y",
+							"Remove test database and access to it?", "y",
+							"Reload privilege tables now?", "y"):
 		print("Setup root access was successfull")
 	else:
 		FAILED_event(step, StepName, "Setup root access was unsuccessfull!")
