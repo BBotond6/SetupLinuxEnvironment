@@ -62,8 +62,10 @@ def RunShExpectCommand(command, exit_str, *args):
 	ExpectScript = f"""
 set timeout 30
 
-# Enable output to terminal
-log_user 1
+# Disable output to terminal
+# For debugging set it to 1
+# Attention! In this case, the password can be displayed on the terminal for some errors!
+log_user 0
 
 spawn {command}
 	"""
@@ -87,6 +89,11 @@ expect eof
 	ExpectProcess.expect(pexpect.EOF)
 	ExpectProcess.close()
 	return True
+
+def GetSudoPassword():
+	print(YELLOW + "\nEnter user password" + END_COLOR)
+	UserPassword = getpass.getpass("[sudo] password for " + getpass.getuser() + ":")
+	return UserPassword
 
 def CreateLinuxGroup(group):
 	try:
@@ -279,11 +286,8 @@ def SetupMariaDB(step):
 		print("The two passwords do not match. Try again!")
 		RootUserPassword = getpass.getpass("(" + str(PasswordCounter + 1) + ". try) New password: ")
 
-	print(YELLOW + "\nEnter user password" + END_COLOR)
-	UserPassword = getpass.getpass("[sudo] password for " + getpass.getuser() + ":")
-
 	if RunShExpectCommand("sudo mysql_secure_installation", "Thanks for using MariaDB!",
-							"[sudo] password for " + getpass.getuser() + ":", UserPassword,
+							"[sudo] password for " + getpass.getuser() + ":", GetSudoPassword(),
 							"Enter current password for root (enter for none):", "",
 							"Switch to unix_socket authentication [Y/n]", "y",
 							"Change the root password? [Y/n]", "y",
