@@ -302,6 +302,14 @@ def SetupMariaDB(step):
 		FAILED_event(step, StepName, "Setup root access was unsuccessfull!")
 	DONE_event(step, StepName)
 
+def InstallArduino(step):
+	StepName = "Install arduino"
+
+	if RunShCommand("sudo apt install arduino"):
+		DONE_event(step, StepName, "Install arduino was successfull")
+	else:
+		FAILED_event(step, StepName, "Install arduino was unsuccessfull!")
+
 def main():
 	SetupOpenSshServer(5)
 	SetupRemoteDesktopAccess(6)
@@ -309,6 +317,7 @@ def main():
 	SetupCppEnvironment(8)
 	InstallBashCompletion(9)
 	SetupMariaDB(10)
+	InstallArduino(11)
 
 if __name__ == "__main__":
 	main()
